@@ -4,6 +4,7 @@
 已有多位Handsome man members
 
 网站是：handsomemem.netlify.app
+![IMG_20250410_220402](https://github.com/user-attachments/assets/f712215a-ce84-42d1-a574-a3fe3c9b9378)
 
 本人对于前端编程是亳无了解的，这个html文件也是ai写的，我仅作一个描述作用。
 
