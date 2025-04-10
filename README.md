@@ -2,6 +2,8 @@
 由deepseek,doubao,chatgpt,grok的4个ai编写而成的文件
 
 已有多位Handsome man members
+![lv_0_20250406210008](https://github.com/user-attachments/assets/00226314-6517-4dea-82a6-f4d3bb20fb13)
+
 
 网站是：handsomemem.netlify.app
 ![IMG_20250410_220402](https://github.com/user-attachments/assets/f712215a-ce84-42d1-a574-a3fe3c9b9378)
@@ -15,3 +17,4 @@
 grok和Chatgpt就好多了，至少会写出完整代码。
 
 最好的我觉得是grok，速度快，代码也少bug，不像豆包。
+![IMG_20250410_220743](https://github.com/user-attachments/assets/0545895a-df60-49f8-a9d6-8530d0cda378)
