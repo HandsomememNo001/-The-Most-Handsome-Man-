@@ -17,4 +17,5 @@
 grok和Chatgpt就好多了，至少会写出完整代码。
 
 最好的我觉得是grok，速度快，代码也少bug，不像豆包。
-![IMG_20250410_220743](https://github.com/user-attachments/assets/0545895a-df60-49f8-a9d6-8530d0cda378)
+![IMG_20250419_194546](https://github.com/user-attachments/assets/9aaa442d-9287-48fe-bbe5-e269de7dc94f)
+
