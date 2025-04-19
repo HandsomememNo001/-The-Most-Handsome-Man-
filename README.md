@@ -19,3 +19,6 @@ grok和Chatgpt就好多了，至少会写出完整代码。
 最好的我觉得是grok，速度快，代码也少bug，不像豆包。
 ![IMG_20250419_194858](https://github.com/user-attachments/assets/a08a9d53-6111-4fbe-87e2-d7f33d0ea144)
 
+但总的来说，对话AI有着很强的编程能力，但如果你想要更好的话，你可以尝试另一块专业的编程AI——cursor
+![IMG_20250419_195253](https://github.com/user-attachments/assets/1dda697d-86c6-45d3-b1d2-15d688e3be5b)
+可惜的是我没有电脑，你只能用拥有网页版的对话ai，感兴趣的可以去玩一玩。我用AI做这个网页也是来玩一玩整蛊的
