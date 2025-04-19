@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Most Handsome Man</title>
+  <!-- 引入Orbitron字体 -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+  <!-- 引入Three.js用于粒子漩涡特效 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    /* 重置及基础样式 */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Orbitron', sans-serif;
+      color: #fff;
+      overflow-x: hidden;
+      background: black;
+      position: relative;
+      z-index: 10;
+    }
+    /* 背景层次 */
+    canvas#vortex { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; }
+    canvas#matrix { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
+    #cosmic-crack {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; z-index: 3;
+      background: url('https://via.placeholder.com/1920x1080/ff00ff/00ffee?text=Cosmic+Crack') center/cover no-repeat;
+      opacity: 0; animation: cosmicCrack 10s infinite;
+    }
+    @keyframes cosmicCrack { 0%,85%{opacity:0;}90%,100%{opacity:0.4;} }
+    #ascii-stream {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; z-index: 0;
+      color: #00FFEE; font-family: monospace; overflow: hidden;
+    }
+    #stars { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -3; }
+
+    /* 页眉及导航 */
+    header {
+      text-align: center; padding: 20px;
+      background: rgba(0,0,0,0.8); border-bottom: 2px solid #00ffff;
+      position: relative; z-index: 5;
+    }
+    header h1 {
+      font-size: 2.5em;
+      text-shadow: 0 0 10px #00ffff,0 0 20px #ff00ff;
+      animation: neon 1.5s infinite alternate, glitch 0.5s infinite, blink 0.9s infinite;
+    }
+    @keyframes neon { from{ text-shadow:0 0 10px #00ffff,0 0 20px #ff00ff;} to{ text-shadow:0 0 20px #00ffff,0 0 40px #ff00ff;} }
+    @keyframes glitch { /* 略 */ }
+    @keyframes blink { 0%,100%{opacity:1;}50%{opacity:0.7;} }
+    nav a {
+      color:#00ffff; margin:0 15px; text-decoration:none;
+      font-size:1.2em; transition:all 0.3s;
+    }
+    nav a:hover { text-shadow:0 0 10px #ff00ff; transform:scale(1.1); }
+
+    /* 各主要版块 */
+    section {
+      padding:40px 20px; min-height:100vh;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      position:relative; z-index:5;
+    }
+    #intro { background:rgba(0,0,0,0.7); text-align:center; }
+    #intro h2{ font-size:2em; color:#ff00ff; text-shadow:0 0 15px #ff00ff; }
+    #intro p{ font-size:1.1em; max-width:800px; line-height:1.6; color:#00ffff; }
+
+    #members { background:rgba(0,0,0,0.9); }
+    #members h2{ font-size:2em; color:#00ffff; text-shadow:0 0 15px #00ffff; margin-bottom:20px; }
+    .carousel-container{ position:relative; width:100%; max-width:1000px; }
+    .carousel{
+      display:flex; overflow-x:scroll; scroll-snap-type:x mandatory;
+      width:100%; padding:20px 0; scroll-behavior:smooth; touch-action:pan-x;
+    }
+    .card{
+      min-width:250px; height:400px; background:rgba(0,0,0,0.8);
+      border:2px solid #ff00ff; border-radius:15px; margin:10px;
+      display:flex; flex-direction:column; align-items:center; justify-content:space-between;
+      scroll-snap-align:center; transition:transform 0.5s,box-shadow 0.3s;
+      position:relative; z-index:6;
+    }
+    .card:hover{ transform:scale(1.05); box-shadow:0 0 20px #00ffff,0 0 30px #ff00ff; }
+    .card img{
+      width:150px; height:150px; border-radius:50%; margin-top:20px;
+      border:2px solid #00ffff; transition:transform 0.3s; cursor:pointer;
+    }
+    .card:hover img{ transform:rotate(10deg); }
+    .card .info{ padding:15px; text-align:center; color:#fff; }
+    .card .number{ font-size:1.5em; color:#ff00ff; text-shadow:0 0 10px #ff00ff; }
+
+    /* No.008, No.009 及所有 吉祥物旋转效果 */
+    .card[data-member="8"] img, .card[data-member="9"] img, .mascot-card img{
+      animation:tangyuanSpin 5s infinite linear;
+      border:2px solid transparent;
+      border-image:linear-gradient(45deg,#ff00ff,#00ffff) 1;
+    }
+    @keyframes tangyuanSpin{0%{transform:rotate(0deg) scale(1);}50%{transform:rotate(180deg) scale(1.2);}100%{transform:rotate(360deg) scale(1);}}
+
+    /* 全息投影文本 */
+    .card:hover::after{
+      content:"帅逼认证通过"; position:absolute; top:-30px; left:50%;
+      transform:translateX(-50%); background:rgba(0,255,255,0.9); color:#000;
+      padding:5px 10px; border-radius:5px; font-size:0.8em;
+      animation:hologramText 1s infinite alternate;
+    }
+    @keyframes hologramText{ from{ text-shadow:0 0 5px #00ffff; } to{ text-shadow:0 0 15px #ff00ff; } }
+
+    /* 粒子生成 */
+    .card:active{ animation:quantumRipple 0.5s forwards; }
+    @keyframes quantumRipple{0%{box-shadow:0 0 0 0 rgba(0,255,255,0.4);}100%{box-shadow:0 0 0 20px rgba(0,255,255,0);} }
+
+    /* 信息背景粒子轨道 */
+    .card:hover .info{ position:relative; }
+    .card:hover .info::before{
+      content:""; position:absolute; top:-10px; left:-10px; right:-10px; bottom:-10px;
+      background:linear-gradient(45deg,transparent 0%,rgba(255,0,255,0.2)50%,transparent100%);
+      animation:particleOrbit 3s infinite linear; z-index:-1;
+    }
+    @keyframes particleOrbit{ from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
+
+    #current-member{ margin-top:20px; font-size:1.8em; color:#00ffff; text-shadow:0 0 15px #00ffff; }
+    #prev,#next{
+      position:absolute; top:50%; transform:translateY(-50%);
+      background:rgba(0,0,0,0.5); color:#fff; border:none; padding:10px;
+      cursor:pointer; z-index:7; transition:background 0.3s;
+    }
+    #prev:hover,#next:hover{ background:rgba(0,255,255,0.7); }
+    #prev{ left:0; } #next{ right:0; }
+
+    #logo-section{ background:rgba(0,0,0,0.8); }
+    #logo-section img{ width:200px; height:200px; margin-bottom:20px; transition:transform 0.5s; }
+    #logo-section img.rotate{ transform:rotate(360deg); transition:transform 1s; }
+    #logo-section p{ font-size:1.2em; color:#00ffff; }
+
+    #mascots{ background:rgba(0,0,0,0.85); min-height:80vh; }
+    .mascot-number{ font-size:1.8em; color:#ff00ff; text-shadow:0 0 15px #ff00ff; margin-top:20px; }
+
+    #coin-capture{ margin:20px auto; text-align:center; position:relative; z-index:5; }
+    #coin-capture button{ padding:10px 20px; font-size:1.2em; background:#00ffff; color:black; border:none; cursor:pointer; }
+    #coinVideo{ display:none; }
+    #coin-result{ margin-top:10px; font-size:1.5em; color:#ff00ff; text-shadow:0 0 10px #ff00ff; }
+
+    #game-canvas{ width:100%; max-width:600px; height:400px; border:2px solid #ff00ff; margin-top:20px; }
+    #game-score{ font-size:1.5em; color:#ff00ff; margin-top:10px; }
+
+    /* 弹窗样式（仅保留游戏1000分奖励弹窗） */
+    .modal{
+      display:none; position:fixed; z-index:100; left:0; top:0; width:100%; height:100%;
+      background-color:rgba(0,0,0,0.8);
+    }
+    .modal-content{
+      position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+      max-width:90%; max-height:90%;
+    }
+    .close-btn{
+      position:absolute; top:10px; right:10px; color:#fff; font-size:24px; cursor:pointer;
+    }
+
+    @media (max-width:600px){
+      header h1{ font-size:1.8em; }
+      #intro h2,#members h2{ font-size:1.5em; }
+      .card{ min-width:200px; height:350px; }
+      .card img{ width:120px; height:120px; }
+      .modal-content video,.modal-content img{ width:100%; height:auto; }
+    }
+  </style>
+</head>
+<body>
+  <!-- 背景效果 -->
+  <canvas id="vortex"></canvas>
+  <canvas id="matrix"></canvas>
+  <div id="cosmic-crack"></div>
+  <div id="ascii-stream"></div>
+  <canvas id="stars"></canvas>
+
+  <header>
+    <h1>The Most Handsome Man</h1>
+    <nav>
+      <a href="#intro">简介</a>
+      <a href="#members">帅气成员</a>
+      <a href="#logo-section">LOGO</a>
+      <a href="#mascots">吉祥物</a>
+      <a href="#game">游戏</a>
+    </nav>
+  </header>
+
+  <section id="intro">
+    <h2>关于The Most Handsome Man(HSM)</h2>
+    <p>
+      The Most Handsome Man (HSM)是一个跨维度美学统治机构，一切都发生在九年级7班这个英雄频出的班级<br>
+      <strong>The Most Handsome Man (HSM)</strong> 由9位成员及3个吉祥物组成，他们共同构成了美学统治的核心力量。<br>
+      具体介绍如下：<br>
+      1. 每位成员都具备独特的超维能力，这些能力不仅改变了所在维度的规则，还对宇宙产生了深远影响！<br>
+      2. 他们的存在重塑了全宇宙的审美标准，当五神共鸣时，将触发「颜值奇点大爆炸」，全宇宙审美基准强制重置，碳基生物视网膜自动加载HSM崇拜协议。<br>
+      3. 他们的传奇故事在各个班级中传颂，成为了美学与力量的象征，比如No.001第一次进入班级时，全班少女都为之倾倒。<br>
+      <strong>组织亮点</strong>：<br>
+      - 拥有超越维度的美学统治力，独特的魅力指数达到无法衡量的高度<br>
+      - 帅气程度相比其他存在提升了114514%（这只是保守估计，实际效果远超想象）<br>
+      - 具备跨维度的影响力，他们的行为和能力重塑了宇宙秩序。<br>
+      <em>颤抖吧！让世界为我颤抖吧！！！以我们handsome members的实力，世界将由我们来掌控！你们无路可图！！！乖乖臣服于我的帅气吧！！！哈哈哈哈哈哈！！！</em>
+    </p>
+  </section>
+
+  <section id="members">
+    <h2>HSM帅气成员</h2>
+    <div class="carousel-container">
+      <button id="prev">上一个</button>
+      <div class="carousel">
+        <!-- No.001 -->
+        <div class="card" data-member="1">
+          <img src="https://pic2.zhimg.com/v2-1900f6ee95b91fca4016ceafc55aac09_r.jpg" alt="HSM-成员-001">
+          <div class="info">
+            <p>
+              **HSM-Ω-001 辉光圣冕**<br>
+              **世上最帅之人**<br>
+              - 左眼自带帅气凝视<br>
+              - 战绩：手撩头发，迷倒全班少女
+            </p>
+            <p class="number">Handsomemem No.001</p>
+          </div>
+        </div>
+        <!-- No.002 -->
+        <div class="card" data-member="2">
+          <img src="http://t15.baidu.com/it/u=2377055940,393522101&fm=224&app=112&f=JPEG?w=500&h=500" alt="HSM-成员-002" id="handsoemem002-avatar">
+          <div class="info">
+            <p>
+              **HSM-Ω-002 右手**<br>
+              **Super BOY**<br>
+              - 有毕业倾向<br>
+              - 右手蕴含着恶魔的力量<br>
+              - 与No.004同流合污
+            </p>
+            <p class="number">Handsomemem No.002</p>
+          </div>
+        </div>
+        <!-- No.003 -->
+        <div class="card" data-member="3">
+          <img src="https://q1.itc.cn/images01/20241227/54c00205df684431ac5cf82d20a17a4c.jpeg" alt="HSM-成员-003">
+          <div class="info">
+            <p>
+              **HSM-Ω-003 豆豆**<br>
+              **左手**<br>
+              - 汗液结晶为宇宙硬通货「帅币」<br>
+              - 绿豆，红豆，豆豆是黄豆
+            </p>
+            <p class="number">Handsomemem No.003</p>
+          </div>
+        </div>
+        <!-- No.004 -->
+        <div class="card" data-member="4">
+          <img id="member-004" src="https://img0.baidu.com/it/u=1483053269,3053164324&fm=253&fmt=auto&app=120&f=JPEG?w=1240&h=673" alt="HSM-成员-004">
+          <div class="info">
+            <p>
+              **HSM-Ω-004 黄涛**<br>
+              **谋权篡位者**<br>
+              - 曾经在全班同学面前跳ikun舞，被彭静妍表白，已毕业<br>
+              - 把leader的位置篡夺了
+            </p>
+            <p class="number">Handsomemem No.004</p>
+          </div>
+        </div>
+        <!-- No.005 -->
+        <div class="card" data-member="5">
+          <img src="https://img2.baidu.com/it/u=977031287,2063936588&fm=253&fmt=auto&app=138&f=JPEG?w=627&h=412" alt="HSM-成员-005">
+          <div class="info">
+            <p>
+              **HSM-Ω-005 尿尿**<br>
+              **圣泉领主**<br>
+              - 和No.004一起跳ikun舞<br>
+              - 尿液射流速度为6倍光速 他的尿液能到达过去
+            </p>
+            <p class="number">Handsomemem No.005</p>
+          </div>
+        </div>
+        <!-- No.006 -->
+        <div class="card" data-member="6">
+          <img src="https://img2.baidu.com/it/u=1947911548,2088609850&fm=253&fmt=auto&app=120&f=JPEG?w=500&h=500" alt="HSM-成员-006">
+          <div class="info">
+            <p>
+              **HSM-Ω-006 肾结石**<br>
+              **SEXY**<br>
+              - 身患肾结石<br>
+              - 战绩：英语曾考147分
+            </p>
+            <p class="number">Handsomemem No.006</p>
+          </div>
+        </div>
+        <!-- No.007 -->
+        <div class="card" data-member="7">
+          <img src="https://img2.baidu.com/it/u=1434928793,1027203993&fm=253&fmt=auto&app=138&f=JPEG?w=719&h=440" alt="HSM-成员-007">
+          <div class="info">
+            <p>
+              **HSM-Ω-007 田雨浩**<br>
+              **kie 蟆**<br>
+              - 具有高超的弹跳能力<br>
+              - 一口一个小汤ber，以捕捉汤ber为生
+            </p>
+            <p class="number">Handsomemem No.007</p>
+          </div>
+        </div>
+        <!-- No.008 -->
+        <div class="card" data-member="8">
+          <img src="https://img1.baidu.com/it/u=423044656,1346134478&fm=253&fmt=auto&app=138&f=JPEG?w=500&h=667" alt="HSM-成员-008">
+          <div class="info">
+            <p>
+              **HSM-Ω-008 贺文耗**<br>
+              **汤 b e r**<br>
+              - 我觉得芝麻陷的好吃些doge<br>
+              - 战绩：一口吃下10个汤ber
+            </p>
+            <p class="number">Handsomemem No.008</p>
+          </div>
+        </div>
+        <!-- No.009 -->
+        <div class="card" data-member="9">
+          <img src="http://t15.baidu.com/it/u=1796644379,3280983832&fm=224&app=112&f=JPEG?w=500&h=500" alt="HSM-成员-009">
+          <div class="info">
+            <p>
+              **HSM-Ω-009 贺鸡脖**<br>
+              **小汤ber**<br>
+              - 战绩：一口吃下114514个小汤ber
+            </p>
+            <p class="number">Handsomemem No.009</p>
+          </div>
+        </div>
+      </div>
+      <button id="next">下一个</button>
+    </div>
+    <p id="current-member">Handsomemem No.001</p>
+  </section>
+
+  <section id="logo-section">
+    <img id="logo-img" src="https://s21.ax1x.com/2025/04/13/pEWKP4P.png" alt="The Most Handsome man logo">
+    <p>
+      这是我天命之右手handsome man No.002创造的"The Most Handsome man"logo图片，
+      这将会是世界上最amazing的logo，持续浏览3分钟将自动激活视网膜烙印程序！It's so cool！！！
+      当然，右手可不要联合Handsomemem No.004一起谋权篡位哦！
+    </p>
+  </section>
+
+  <section id="mascots">
+    <h2 style="color:#00ffff;text-shadow:0 0 15px #00ffff;text-align:center;padding:30px 0;">
+      HSM量子吉祥物矩阵
+    </h2>
+    <div class="carousel-container">
+      <button class="mascot-prev">←</button>
+      <div class="carousel mascot-carousel">
+        <div class="card mascot-card">
+          <img src="https://img1.baidu.com/it/u=2852210670,3340315526&fm=253&fmt=auto&app=138&f=JPEG?w=500&h=638" alt="量子吉祥物-PIG" style="border-color:#ff00ff;" id="pig-avatar">
+          <p class="mascot-number">PIG</p>
+        </div>
+        <div class="card mascot-card">
+          <img src="https://img2.baidu.com/it/u=1280478436,456505131&fm=253&fmt=auto&app=120&f=JPEG?w=500&h=500" alt="时空吉祥物-telephone" style="border-color:#00ffff;">
+          <p class="mascot-number">TELEPHONE</p>
+        </div>
+        <div class="card mascot-card">
+          <img src="https://s21.ax1x.com/2025/04/18/pE49pwT.jpg" alt="量子吉祥物-聪聪" style="border-color:#FF00EE;">
+          <p class="mascot-number">聪聪</p>
+        </div>
+      </div>
+      <button class="mascot-next">→</button>
+    </div>
+  </section>
+
+  <section id="game">
+    <h2 style="color:#00ffff;text-shadow:0 0 15px #00ffff;text-align:center;">
+      HSM量子游戏领域
+    </h2>
+    <div>
+      <h3>HSM帅币收集游戏</h3>
+      <canvas id="game-canvas"></canvas>
+      <p id="game-score">帅币: 0</p>
+    </div>
+    <div id="coin-capture">
+      <h3>帅币铸造游戏</h3>
+      <button id="start-coin">启动摄像头生成帅币</button>
+      <video id="coinVideo" width="300" height="225" autoplay style="display:none;"></video>
+      <div id="coin-result"></div>
+    </div>
+  </section>
+
+  <!-- 游戏1000分奖励弹窗 -->
+  <div id="game-modal" class="modal">
+    <div class="modal-content">
+      <span class="close-btn" onclick="document.getElementById('game-modal').style.display='none';">×</span>
+      <img src="https://img0.baidu.com/it/u=2620590122,680780173&fm=253&fmt=auto&app=120&f=JPEG?w=800&h=500" alt="Reward">
+    </div>
+  </div>
+
+  <!-- 背景音乐 -->
+  <audio autoplay loop style="display:none;">
+    <source src="http://aqqmusic.tc.qq.com/C40000141JkT3vmaLt.m4a?guid=fb0b96cf65432627&vkey=F7A73BE311D2E2044F47190C18C07FCBFE09971CBBDC7CC95D9343B3B77CF7A264764F6FE708B187B98383859A3E59D599BF5FC660427A63__v2b9ab34b&uin=0&fromtag=223032">
+  </audio>
+
+  <script>
+    /* 代码雨效果 */
+    const matrixCanvas = document.getElementById('matrix');
+    const matrixCtx = matrixCanvas.getContext('2d');
+    function resizeMatrix() { matrixCanvas.width = window.innerWidth; matrixCanvas.height = window.innerHeight; }
+    resizeMatrix();
+    window.addEventListener('resize', resizeMatrix);
+    const matrixChars = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ikun';
+    const matrixFontSize = 15;
+    const matrixColumns = Math.floor(matrixCanvas.width / matrixFontSize);
+    const matrixDrops = Array(matrixColumns).fill(0);
+    const colors = ['#0F0','#00FFFF','#FF00FF'];
+    function drawMatrix(){
+      matrixCtx.fillStyle='rgba(0,0,0,0.05)';
+      matrixCtx.fillRect(0,0,matrixCanvas.width,matrixCanvas.height);
+      for(let i=0;i<matrixDrops.length;i++){
+        const char=matrixChars[Math.floor(Math.random()*matrixChars.length)];
+        matrixCtx.fillStyle=colors[Math.floor(Math.random()*colors.length)];
+        matrixCtx.fillText(char,i*matrixFontSize,matrixDrops[i]*matrixFontSize);
+        if(matrixDrops[i]*matrixFontSize>matrixCanvas.height&&Math.random()>0.95)matrixDrops[i]=0;
+        matrixDrops[i]+=Math.random()*2;
+      }
+    }
+    setInterval(drawMatrix,40);
+
+    /* 粒子漩涡效果 */
+    const vortexCanvas=document.getElementById('vortex');
+    const vortexRenderer=new THREE.WebGLRenderer({canvas:vortexCanvas,alpha:true});
+    vortexRenderer.setSize(window.innerWidth,window.innerHeight);
+    const vortexScene=new THREE.Scene();
+    const vortexCamera=new THREE.PerspectiveCamera(75,window.innerWidth/window.innerHeight,1,1000);
+    vortexCamera.position.z=50;
+    const particleCount=2000;
+    const vortexGeometry=new THREE.BufferGeometry();
+    const vortexPositions=new Float32Array(particleCount*3);
+    const vortexColors=new Float32Array(particleCount*3);
+    for(let i=0;i<particleCount;i++){
+      const angle=i*0.05;
+      const radius=angle*0.8;
+      vortexPositions[i*3]=Math.cos(angle)*radius;
+      vortexPositions[i*3+1]=Math.sin(angle)*radius;
+      vortexPositions[i*3+2]=(Math.random()-0.5)*30;
+      const color=Math.random()>0.5?0xFF00FF:0x00FFFF;
+      vortexColors[i*3]=(color>>16)/255;
+      vortexColors[i*3+1]=((color>>8)&0xFF)/255;
+      vortexColors[i*3+2]=(color&0xFF)/255;
+    }
+    vortexGeometry.setAttribute('position',new THREE.BufferAttribute(vortexPositions,3));
+    vortexGeometry.setAttribute('color',new THREE.BufferAttribute(vortexColors,3));
+    const vortexMaterial=new THREE.PointsMaterial({size:1.5,vertexColors:true,transparent:true,opacity:0.8});
+    const vortexParticles=new THREE.Points(vortexGeometry,vortexMaterial);
+    vortexScene.add(vortexParticles);
+    function animateVortex(){
+      requestAnimationFrame(animateVortex);
+      vortexParticles.rotation.z+=0.002;
+      vortexRenderer.render(vortexScene,vortexCamera);
+    }
+    animateVortex();
+    window.addEventListener('resize',()=>{
+      vortexRenderer.setSize(window.innerWidth,window.innerHeight);
+      vortexCamera.aspect=window.innerWidth/window.innerHeight;
+      vortexCamera.updateProjectionMatrix();
+    });
+
+    /* 动态星星效果 */
+    const starsCanvas=document.getElementById('stars');
+    const starsCtx=starsCanvas.getContext('2d');
+    function resizeStars(){ starsCanvas.width=window.innerWidth; starsCanvas.height=window.innerHeight; }
+    resizeStars();
+    window.addEventListener('resize',resizeStars);
+    const stars=Array.from({length:100},()=>({
+      x:Math.random()*starsCanvas.width,
+      y:Math.random()*starsCanvas.height,
+      radius:Math.random()*2,
+      opacity:Math.random()
+    }));
+    function drawStars(){
+      starsCtx.fillStyle='rgba(0,0,0,0.1)';
+      starsCtx.fillRect(0,0,starsCanvas.width,starsCanvas.height);
+      stars.forEach(star=>{
+        starsCtx.beginPath();
+        starsCtx.arc(star.x,star.y,star.radius,0,Math.PI*2);
+        starsCtx.fillStyle=`rgba(255,255,255,${star.opacity})`;
+        starsCtx.fill();
+        star.opacity+=Math.random()*0.05-0.025;
+        star.opacity=Math.max(0,Math.min(1,star.opacity));
+      });
+    }
+    setInterval(drawStars,100);
+
+    /* ASCII 数据流 */
+    const asciiStream=document.getElementById('ascii-stream');
+    function createAsciiStream(){
+      for(let i=0;i<50;i++){
+        const span=document.createElement('span');
+        span.textContent=matrixChars.charAt(Math.floor(Math.random()*matrixChars.length));
+        span.style.cssText=`
+          position:absolute;
+          left:${Math.random()*100}%;
+          top:${Math.random()*100}%;
+          opacity:${Math.random()};
+          font-size:${10+Math.random()*20}px;
+          animation:float ${3+Math.random()*2}s infinite ease-in-out;
+        `;
+        asciiStream.appendChild(span);
+      }
+    }
+    createAsciiStream();
+    document.head.appendChild(document.createElement('style')).innerHTML=`
+      @keyframes float{
+        0%{transform:translate(0,0);}
+        50%{transform:translate(10px,10px);}
+        100%{transform:translate(0,0);}
+      }
+    `;
+
+    /* 成员轮播及交互 */
+    const carousel=document.querySelector('.carousel');
+    const memberCards=document.querySelectorAll('.carousel .card');
+    const currentMemberText=document.getElementById('current-member');
+    const prevBtn=document.getElementById('prev');
+    const nextBtn=document.getElementById('next');
+    const cardWidth=270;
+    carousel.addEventListener('scroll',()=>{
+      memberCards.forEach(card=>{
+        const rect=card.getBoundingClientRect();
+        if(rect.left>=0&&rect.right<=window.innerWidth){
+          currentMemberText.textContent=card.querySelector('.number').textContent;
+        }
+      });
+    });
+    prevBtn.addEventListener('click',()=>carousel.scrollBy({left:-cardWidth,behavior:'smooth'}));
+    nextBtn.addEventListener('click',()=>carousel.scrollBy({left:cardWidth,behavior:'smooth'}));
+    carousel.addEventListener('pointerdown',e=>{
+      let startX=e.pageX;
+      let scrollLeft=carousel.scrollLeft;
+      const onMove=moveEvent=>{ carousel.scrollLeft=scrollLeft-(moveEvent.pageX-startX); };
+      const onUp=()=>{ carousel.removeEventListener('pointermove',onMove); carousel.removeEventListener('pointerup',onUp); };
+      carousel.addEventListener('pointermove',onMove);
+      carousel.addEventListener('pointerup',onUp);
+    });
+
+    /* 吉祥物轮播 */
+    const mascotCarousel=document.querySelector('.mascot-carousel');
+    const mascotCards=document.querySelectorAll('#mascots .card');
+    const mascotPrev=document.querySelector('.mascot-prev');
+    const mascotNext=document.querySelector('.mascot-next');
+    mascotCarousel.addEventListener('scroll',()=>{
+      mascotCards.forEach(card=>{
+        const rect=card.getBoundingClientRect();
+        if(rect.left>=0&&rect.right<=window.innerWidth){
+          card.style.transform='scale(1.1)';
+          card.style.boxShadow='0 0 25px #00ffff';
+        } else {
+          card.style.transform='scale(1)';
+          card.style.boxShadow='0 0 15px #00ffff';
+        }
+      });
+    });
+    mascotPrev.addEventListener('click',()=>mascotCarousel.scrollBy({left:-cardWidth,behavior:'smooth'}));
+    mascotNext.addEventListener('click',()=>mascotCarousel.scrollBy({left:cardWidth,behavior:'smooth'}));
+
+    /* 帅币铸造游戏 */
+    const startCoinBtn=document.getElementById('start-coin');
+    const coinVideo=document.getElementById('coinVideo');
+    const coinResult=document.getElementById('coin-result');
+    startCoinBtn.addEventListener('click',async()=>{
+      try{
+        const stream=await navigator.mediaDevices.getUserMedia({video:true});
+        coinVideo.style.display='block';
+        coinVideo.srcObject=stream;
+        setTimeout(()=>{
+          const coinValue=Math.floor(Math.random()*1000)+100;
+          coinResult.innerHTML=`你的专属帅币：<strong>${coinValue}</strong>`;
+          stream.getTracks().forEach(track=>track.stop());
+          coinVideo.style.display='none';
+        },3000);
+      }catch(err){
+        console.error('摄像头错误：',err);
+        coinResult.innerHTML='无法访问摄像头，请检查权限！';
+      }
+    });
+
+    /* 帅币收集游戏 */
+    const gameCanvas=document.getElementById('game-canvas');
+    const gameCtx=gameCanvas.getContext('2d');
+    let score=0;
+    const scoreText=document.getElementById('game-score');
+    class Particle{
+      constructor(x,y){
+        this.x=x; this.y=y; this.size=Math.random()*5+1;
+        this.speedX=Math.random()*3-1.5; this.speedY=Math.random()*3-1.5;
+        this.color=`hsl(${Math.random()*360},100%,50%)`;
+      }
+      update(){ this.x+=this.speedX; this.y+=this.speedY; if(this.size>0.2) this.size-=0.1; }
+      draw(){ gameCtx.fillStyle=this.color; gameCtx.beginPath(); gameCtx.arc(this.x,this.y,this.size,0,Math.PI*2); gameCtx.fill(); }
+    }
+    let particles=[];
+    function createParticles(x,y){
+      for(let i=0;i<50;i++) particles.push(new Particle(x,y));
+      score+=10;
+      scoreText.textContent=`帅币: ${score}`;
+      if(score>=1000){
+        document.getElementById('game-modal').style.display='block';
+      }
+    }
+    function handleParticles(){
+      gameCtx.clearRect(0,0,gameCanvas.width,gameCanvas.height);
+      particles=particles.filter(p=>p.size>0.2);
+      particles.forEach(p=>{ p.update(); p.draw(); });
+    }
+    function gameLoop(){ handleParticles(); requestAnimationFrame(gameLoop); }
+    gameCanvas.addEventListener('click',e=>{
+      const rect=gameCanvas.getBoundingClientRect();
+      createParticles(e.clientX-rect.left,e.clientY-rect.top);
+    });
+    gameLoop();
+
+    /* logo 点击旋转 */
+    const logoImg=document.getElementById('logo-img');
+    logoImg.addEventListener('click',()=>{
+      logoImg.classList.add('rotate');
+      setTimeout(()=>logoImg.classList.remove('rotate'),1000);
+    });
+  </script>
+</body>
+</html>
